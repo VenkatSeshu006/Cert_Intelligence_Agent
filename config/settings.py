@@ -5,7 +5,6 @@ load_dotenv()
 
 
 class Settings:
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-    MODEL = os.getenv("MODEL", "meta-llama/llama-3.3-70b-instruct")
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    MODEL = os.getenv("MODEL", "gemini-2.5-flash")
     APP_NAME = "Certificate Intelligence Platform"
-    VERSION = "2.0"

@@ -1,21 +1,15 @@
-from openai import OpenAI
+from google import genai
 from config.settings import Settings
 
 
-class OpenRouterClient:
+class GeminiClient:
 
     def __init__(self):
-        self.client = OpenAI(
-            api_key=Settings.OPENROUTER_API_KEY,
-            base_url="https://openrouter.ai/api/v1"
-        )
+        self.client = genai.Client(api_key=Settings.GEMINI_API_KEY)
 
     def ask(self, system_prompt, user_prompt):
-        response = self.client.chat.completions.create(
+        response = self.client.models.generate_content(
             model=Settings.MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ]
+            contents=f"{system_prompt}\n\n{user_prompt}"
         )
-        return response.choices[0].message.content
+        return response.text

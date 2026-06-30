@@ -1,4 +1,4 @@
-from ai_agent.client import OpenRouterClient
+from ai_agent.client import GeminiClient
 from ai_agent.memory import Memory
 from ai_agent.prompts import SYSTEM_PROMPT
 
@@ -6,7 +6,7 @@ from ai_agent.prompts import SYSTEM_PROMPT
 class Copilot:
 
     def __init__(self, employee):
-        self.client = OpenRouterClient()
+        self.client = GeminiClient()
         self.memory = Memory()
         self.memory.load_employee(employee)
 
