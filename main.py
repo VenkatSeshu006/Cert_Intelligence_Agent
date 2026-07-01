@@ -1,12 +1,8 @@
-"""
-Main entry point.
+import ssl
 
-Flow:
-  1. Ensure DB schema exists
-  2. Sync employee from Credly → SQLite (both native + external badges)
-  3. Print expiry status report
-  4. Launch the AI terminal chat using the FULL, freshly-loaded employee object
-"""
+from database.repository import EmployeeRepository, ReminderRepository
+from services.reminder_engine import ReminderEngine
+ssl._create_default_https_context = ssl._create_unverified_context
 
 from database.schema import Schema
 from services.sync_engine import SyncEngine
@@ -32,6 +28,39 @@ def print_expiry_report(employee):
         print(f"Status        : {item.status}")
         print("-" * 60)
 
+def print_list_skills(employee):
+    skills = set()
+    for cert in employee.certifications:
+        for skill in cert.skills:
+            skills.add(skill.name)
+    
+    print()
+    print("-" * 60)
+    print("ALL SKILLS ACROSS CERTIFICATIONS")
+    print("-" * 60)
+    
+    for skill in sorted(skills):
+        print(f"- {skill}")
+    
+def print_reminders(employee_id):
+    repo = ReminderRepository()
+    reminders = repo.get_pending(employee_id)
+
+    print()
+    print("-" * 60)
+    print(f"PENDING REMINDERS  ({len(reminders)})")
+    print("-" * 60)
+
+    if not reminders:
+        print("  No pending reminders.")
+    else:
+        for r in reminders:
+            print(f"  [{r['reminder_type']}] {r['message']}")
+    print()
+
+
+
+
 
 def main():
     # 1. DB ready
@@ -45,22 +74,32 @@ def main():
 
     # 3. Expiry report
     print_expiry_report(employee)
-
-    # 4. AI chat
+    
+    # 4.Reminder engine
+    employee_repo = EmployeeRepository()
+    db_employee = employee_repo.get_by_credly_id(USER_ID)
+    employee_id = db_employee["id"]
+    engine =ReminderEngine()
+    count = engine.run(employee,employee_id)
+    print(f"\n{count} reminders created for expiring certifications.\n")
+    print_reminders(employee_id)
+    # 5. List all skills
+    print_list_skills(employee)
+    # 6. AI chat
     print()
     print("=" * 60)
     print("Starting AI Copilot...")
     print("=" * 60)
 
     copilot = Copilot(employee)
-    print("✓ AI Ready. Type 'exit' to quit.\n")
+    print("Ai is ready for interaction. Type 'exit' to quit.\n")
 
     while True:
         question = input("You > ").strip()
         if not question:
             continue
         if question.lower() in ["exit", "quit"]:
-            print("Goodbye!")
+            print("See you Again!")
             break
         try:
             answer = copilot.chat(question)

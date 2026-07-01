@@ -90,7 +90,13 @@ class CertificationRepository:
 
     def get_all(self):
         return self.db.fetchall("SELECT * FROM certifications")
-
+    
+    def get_by_badge_id(self, badge_id):
+        return self.db.fetchone(
+            "SELECT * FROM certifications WHERE badge_id = ?",
+            (badge_id,)
+        )
+    
     def get_by_employee(self, employee_id):
         return self.db.fetchall(
             "SELECT * FROM certifications WHERE employee_id = ? ORDER BY issue_date",
@@ -161,24 +167,39 @@ class ReminderRepository:
         self.db = Database()
 
     def save(self, employee_id, certification_id, reminder_type, message, scheduled_for):
+        # Avoid duplicate reminders for the same cert + type
+        existing = self.db.fetchone("""
+            SELECT id FROM reminders
+            WHERE employee_id = ?
+            AND certification_id = ?
+            AND reminder_type = ?
+            AND status = 'pending'
+        """, (employee_id, certification_id, reminder_type))
+
+        if existing:
+            return existing["id"]
+
         self.db.execute("""
             INSERT INTO reminders
-                (employee_id, certification_id, reminder_type, message, scheduled_for)
+            (employee_id, certification_id, reminder_type, message, scheduled_for)
             VALUES (?, ?, ?, ?, ?)
         """, (employee_id, certification_id, reminder_type, message, scheduled_for))
 
-    def get_pending(self):
+        return self.db.fetchone(
+            "SELECT id FROM reminders ORDER BY id DESC LIMIT 1"
+        )["id"]
+
+    def get_pending(self, employee_id):
         return self.db.fetchall("""
-            SELECT r.*, e.full_name as employee_name, c.name as cert_name
-            FROM reminders r
-            JOIN employees e ON e.id = r.employee_id
-            LEFT JOIN certifications c ON c.id = r.certification_id
-            WHERE r.status = 'pending' AND r.scheduled_for <= datetime('now')
-            ORDER BY r.scheduled_for
-        """)
+            SELECT * FROM reminders
+            WHERE employee_id = ?
+            AND status = 'pending'
+            ORDER BY scheduled_for
+        """, (employee_id,))
 
     def mark_sent(self, reminder_id):
-        self.db.execute(
-            "UPDATE reminders SET status = 'sent', sent_at = datetime('now') WHERE id = ?",
-            (reminder_id,)
-        )
+        self.db.execute("""
+            UPDATE reminders
+            SET status = 'sent', sent_at = datetime('now')
+            WHERE id = ?
+        """, (reminder_id,))

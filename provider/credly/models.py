@@ -24,6 +24,7 @@ class Certification:
     image_url: str
     skills: List[Skill] = field(default_factory=list)
     source: str = "credly"          # "credly" | "external"
+    tags: List[str] = field(default_factory=list)
 
 
 @dataclass

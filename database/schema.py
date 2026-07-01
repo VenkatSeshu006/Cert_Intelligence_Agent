@@ -65,5 +65,21 @@ class Schema:
                 FOREIGN KEY(certification_id) REFERENCES certifications(id)
             )
         """)
+        self.db.execute("""
+                CREATE TABLE IF NOT EXISTS reminders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                employee_id INTEGER,
+                certification_id INTEGER,
+                reminder_type TEXT,        -- "90_day" | "30_day" | "7_day"
+                message TEXT,
+                scheduled_for TEXT,        -- date the reminder is due
+                sent_at TEXT,              -- NULL until actually sent
+                status TEXT DEFAULT 'pending',  -- "pending" | "sent" | "failed"
+                FOREIGN KEY(employee_id) REFERENCES employees(id),
+                FOREIGN KEY(certification_id) REFERENCES certifications(id)
+            )
+        """)
 
-        print("✅ Database schema ready.")
+                        
+
+        print("Database Schemas are created successfully.")
